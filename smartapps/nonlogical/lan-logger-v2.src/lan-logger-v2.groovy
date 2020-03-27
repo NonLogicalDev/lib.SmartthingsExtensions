@@ -155,7 +155,7 @@ def saveSettings() {
     postLANMessage([
         type: "subscribe",
         data: state.subs.collect {
-            "${getDeviceById(it.deviceId).name} -> ${it.capName}:${it.attrName}"
+            ["${getDeviceById(it.deviceId).id}", "${it.capName}:${it.attrName}"]
         },
     ])
 
@@ -202,6 +202,10 @@ def connectToDevices(devices) {
 
 def onDevicePoll(device, capName, attrName) {
     def evt = serializePoll(device, capName, attrName)
+    if (evt == null) {
+        log.debug "POLLING_EVENT:SKIP ${device.label}::${capName}:${attrName} :: No Data"
+        return
+    }
 
     log.debug "POLLING_EVENT: ${device.label}::${capName}:${attrName} :: ${evt}"
     postLANMessage([
@@ -237,8 +241,7 @@ def serializeEvent(e, capName) {
         date: formatISODate(e.date),
 
         device: deviceObjectToMap(e.device, false),
-
-        data: decodeMetric(e, capName, attrName),
+        metric: decodeMetric(e, capName, attrName),
     ]
 }
 
@@ -257,8 +260,7 @@ def serializePoll(device, capName, attrName) {
         date: formatISODate(date),
 
         device: deviceObjectToMap(device, false),
-
-        data: decodeMetric(state, capName, attrName),
+        metric: decodeMetric(state, capName, attrName),
     ]
 }
 
@@ -338,22 +340,29 @@ def decodeMetric(state, capName, metricName) {
 
     // Fully qualified metric name if available.
     if (capName != null) {
-        output.metric = "${capName}.${metricName}"
+        output.name = "${capName}.${metricName}"
     } else {
-        output.metric = metricName
+        output.name = metricName
     }
 
-    def rvalue = decodeState(state)
-    def value = rvalue.value
-    def type = rvalue.type
+    def dValue = translateMetricValue(state, metricName)
 
     output << [
-        unit:   state.unit,
-        strValue: state.value,
+        "unit":      state.unit,
+        "str-value": state.value,
 
-        type:  type,
-        value: value,
+        "type":  dValue.type,
+        "value": dValue.value,
     ]
+
+    return output
+}
+
+def translateMetricValue(e, metricName) {
+    def sv = decodeStateValue(e)
+
+    def type = sv.type
+    def value = sv.value
 
     switch (metricName) {
 
@@ -370,126 +379,48 @@ def decodeMetric(state, capName, metricName) {
     // thermostatOperatingState (S)
     //--------------------------------------------------------------------------------/
         case "acceleration":
-            output << [
-                decodedType: "logical",
-                decodedValue: (value == "active") ? 1 : 0,
-            ]
+            type = "boolean"
+            value = (value == "active") ? true : false
             break
 
         case "contact":
-            output << [
-                decodedType: "logical",
-                decodedValue: (value == "open") ? 1 : 0,
-            ]
+            type = "boolean"
+            value = (value == "open") ? true : false
             break
 
         case "motion":
-            output << [
-                decodedType: "logical",
-                decodedValue: (value == "active") ? 1 : 0,
-            ]
+            type = "boolean"
+            value = (value == "active") ? true : false
             break
 
         case "presence":
-            output << [
-                decodedType: "logical",
-                decodedValue: (value == "present") ? 1 : 0,
-            ]
+            type = "boolean"
+            value = (value == "present") ? true : false
             break
 
         case "switch":
-            output << [
-                decodedType: "logical",
-                decodedValue: (value == "on") ? 1 : 0,
-            ]
+            type = "boolean"
+            value = (value == "on") ? true : false
             break
 
         case "tamper":
-            output << [
-                decodedType: "logical",
-                decodedValue: (value == "detected") ? 1 : 0,
-            ]
-            break
-
-        case "thermostatMode":
-            output << [
-                decodedType: "logical",
-                decodedValue: (value == "on") ? 1 : 0,
-            ]
-            break
-
-        case "thermostatOperatingState":
-            output << [
-                decodedType: "logical",
-                decodedValue: (value != "idle") ? 1 : 0,
-            ]
-            break
-
-    // case "status":
-    //     outputT = "logical"
-    //     outputV = (v == "open") ? 1 : 0
-    //     break
-
-
-    ///// Numeric:
-    //--------------------------------------------------------------------------------/
-    // battery (N)
-    // colorTemperature (N)
-    // heatingSetpoint (N)
-    // hue (N)
-    // humidity (N)
-    // illuminance (N)
-    // level (N)
-    // lxLight (N)
-    // pLight (N)
-    // power (N)
-    // saturation (N)
-    // temperature (N)
-    // thermostatSetpoint (N)
-    //--------------------------------------------------------------------------------/
-        case "battery":
-        case "colorTemperature":
-        case "heatingSetpoint":
-        case "hue":
-        case "humidity":
-        case "illuminance":
-        case "level":
-        case "lxLight":
-        case "pLight":
-        case "power":
-        case "saturation":
-        case "temperature":
-        case "thermostatSetpoint":
-            output << [
-                decodedType: "numeric",
-                decodedValue: state.doubleValue
-            ]
-            break
-
-    ///// Vector:
-    //--------------------------------------------------------------------------------/
-    // threeAxis (A)
-    //--------------------------------------------------------------------------------/
-        case "threeAxis":
-            output << [
-                decodedType: "vector",
-                decodedValue: state.threeAxis
-            ]
+            type = "boolean"
+            value = (value == "detected") ? true : false
             break
 
     ///// Raw Value Otherwise:
-    // button (S)
-    // thermostatOperatingState (S)
-    // lastCheckin (DATE)
     //--------------------------------------------------------------------------------/
         default:
             break
     }
 
-    return output
+    return [
+        type: type,
+        value: value,
+    ]
 }
 
-def decodeState(e) {
+def decodeStateValue(e) {
     try {
         return [
             type: "numeric",
