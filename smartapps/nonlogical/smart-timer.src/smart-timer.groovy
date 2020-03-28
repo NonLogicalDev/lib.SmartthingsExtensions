@@ -15,7 +15,7 @@
  */
 
 definition(
-        name: "REST Api",
+        name: "Smart Timer",
         namespace: "nonlogical",
         author: "Oleg Utkin",
         description: "Rest API to my device information.",

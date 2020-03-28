@@ -18,10 +18,13 @@
 
 definition(
     name: "LAN Logger",
+
     namespace: "nonlogical",
     author: "Oleg Utkin",
+
     description: "Logs data from sensors to a lan server.",
     category: "SmartThings Labs",
+
     iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
     iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
     iconX4Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
