@@ -18,7 +18,7 @@
 
 definition(
     name: "LAN Logger V2",
-    namespace: "net.nonlogical",
+    namespace: "nonlogical",
     author: "Oleg Utkin",
     description: "Logs data from sensors to a lan server.",
     category: "SmartThings Labs",

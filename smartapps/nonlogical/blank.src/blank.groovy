@@ -18,7 +18,7 @@
 
 definition(
     name: "Blank",
-    namespace: "net.nonlogical",
+    namespace: "nonlogical",
     author: "Oleg Utkin",
     description: "Does not do anything.",
     category: "SmartThings Labs",

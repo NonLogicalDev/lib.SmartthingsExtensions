@@ -16,7 +16,7 @@
 
 definition(
         name: "REST Api",
-        namespace: "net.nonlogical",
+        namespace: "nonlogical",
         author: "Oleg Utkin",
         description: "Rest API to my device information.",
         category: "SmartThings API",
